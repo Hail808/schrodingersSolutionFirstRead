@@ -1,39 +1,9 @@
-import ollama
-import tkinter as tk
-from tkinter import simpledialog, messagebox
+import subprocess
 
-SELECTED_MODEL = 'qwen2.5-coder:0.5b'
+def run_ai_response_test():
+    result = subprocess.run(['python3', 'src/aiResponseTest'], capture_output=True, text=True)
+    print(result.stdout)
+    print(result.stderr)
 
-def get_response(content):
-    response = ollama.chat(
-        model=SELECTED_MODEL,
-        messages=[
-            {
-                'role': 'user', 
-                'content': content
-            }
-        ]
-    )
-    return response['message']['content']
-
-
-# Create the main window
-root = tk.Tk()
-root.title("Schrodinger's Solution")
-
-# Create a text box for user input
-text_box = tk.Text(root, height=10, width=50)
-text_box.pack(pady=20)
-
-def on_submit():
-    content = text_box.get("1.0", tk.END).strip()
-    if content:
-        response_content = get_response(content)
-        messagebox.showinfo("Response", response_content)
-
-# Create a button to submit the input
-submit_button = tk.Button(root, text="Submit", command=on_submit)
-submit_button.pack(pady=20)
-
-# Run the application
-root.mainloop()
+if __name__ == "__main__":
+    run_ai_response_test()
