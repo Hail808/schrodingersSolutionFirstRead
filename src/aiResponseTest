@@ -1,6 +1,10 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, simpledialog, filedialog
 from model.aiModel import get_response
+
+def read_file(file_path):
+    with open(file_path, 'r') as file:
+        return file.read()
 
 # Create the main window
 root = tk.Tk()
@@ -20,10 +24,24 @@ def on_submit():
     else:
         messagebox.showwarning("Input Error", "Please enter some text.")
         return
+    
+# Function to handle the load button, read content from a file and add response at bottom of the window
+def on_load_file():
+    file_path = filedialog.askopenfilename(title="Select a file", filetypes=(("Text files", "*.txt"), ("All files", "*.*")))
+    if file_path:
+        base_content = "Does this follow clean code principles: \n"
+        content = read_file(file_path)
+        response_content = get_response(base_content + content)
+        response_label = tk.Label(root, text=response_content, font=("Helvetica", 12))
+        response_label.pack(pady=10)
    
 # Create a button to submit the input
 submit_button = tk.Button(root, text="Submit", command=on_submit)
 submit_button.pack(pady=20)
+
+# Create a button to load content from a file
+load_button = tk.Button(root, text="Load from File", command=on_load_file)
+load_button.pack(pady=10)
 
 # Run the application
 root.mainloop()
