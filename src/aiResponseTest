@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, simpledialog, filedialog
 from model.aiModel import get_response
+from linked_list import LinkedListHelp
 
 def read_file(file_path):
     with open(file_path, 'r') as file:
@@ -14,6 +15,9 @@ root.title("Schrodinger's Solution")
 text_box = tk.Text(root, height=10, width=50)
 text_box.pack(pady=20)
 
+# Initialize the linked list to store responses
+response_list = LinkedListHelp()
+
 # Function to handle the submit button, add response at bottom of the window
 def on_submit():
     content = text_box.get("1.0", tk.END).strip()
@@ -21,20 +25,30 @@ def on_submit():
         response_content = get_response(content)
         response_label = tk.Label(root, text=response_content, font=("Helvetica", 12))
         response_label.pack(pady=10)
+        response_list.prepend(response_content)  # Store response in linked list
     else:
         messagebox.showwarning("Input Error", "Please enter some text.")
         return
     
-# Function to handle the load button, read content from a file and add response at bottom of the window
+# Function to handle the load button, read content from a file(s), and stores responses in linked list
 def on_load_file():
-    file_path = filedialog.askopenfilename(title="Select a file", filetypes=(("Text files", "*.txt"), ("All files", "*.*")))
-    if file_path:
-        base_content = "Does this follow clean code principles: \n"
-        content = read_file(file_path)
-        response_content = get_response(base_content + content)
+    file_paths = filedialog.askopenfilenames(title="Select a file", filetypes=(("Text files", "*.txt"), ("All files", "*.*")))
+    if file_paths:
+        base_content = "What is the output of this code: \n"
+        for file_path in file_paths:
+            content = read_file(file_path)
+            response_content = get_response(base_content + content)
+            response_list.prepend(response_content)  # Store response in linked list
+
+# Function to dequeue and display responses from the linked list
+def display_responses():
+    while True:
+        response_content = response_list.dequeue()
+        if response_content is None:
+            break
         response_label = tk.Label(root, text=response_content, font=("Helvetica", 12))
         response_label.pack(pady=10)
-   
+
 # Create a button to submit the input
 submit_button = tk.Button(root, text="Submit", command=on_submit)
 submit_button.pack(pady=20)
@@ -42,6 +56,10 @@ submit_button.pack(pady=20)
 # Create a button to load content from a file
 load_button = tk.Button(root, text="Load from File", command=on_load_file)
 load_button.pack(pady=10)
+
+# Create a button to display responses from the linked list
+display_button = tk.Button(root, text="Display Responses", command=display_responses)
+display_button.pack(pady=10)
 
 # Run the application
 root.mainloop()
