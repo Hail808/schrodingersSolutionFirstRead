@@ -1,7 +1,9 @@
 import tkinter as tk
 from tkinter import messagebox, simpledialog, filedialog
+from tkinter import ttk
 from model.aiModel import get_response
 from linked_list import LinkedListHelp
+import os
 
 def read_file(file_path):
     with open(file_path, 'r') as file:
@@ -11,34 +13,74 @@ def read_file(file_path):
 root = tk.Tk()
 root.title("Schrodinger's Solution")
 
+# Create a canvas to contain the scrollable content
+canvas = tk.Canvas(root)
+canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+# Create a scrollbar and link it to the canvas
+scrollbar = tk.Scrollbar(root, command=canvas.yview)
+scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+canvas.config(yscrollcommand=scrollbar.set)
+
+# Create a frame inside the canvas to hold the content
+content_frame = tk.Frame(canvas)
+canvas.create_window((0, 0), window=content_frame, anchor='nw')
+
+# Function to update the scroll region of the canvas
+def update_scroll_region(event=None):
+    canvas.config(scrollregion=canvas.bbox("all"))
+
+content_frame.bind("<Configure>", update_scroll_region)
+
 # Create a text box for user input
-text_box = tk.Text(root, height=10, width=50)
+text_box = tk.Text(content_frame, height=10, width=50)
 text_box.pack(pady=20)
 
 # Initialize the linked list to store responses
 response_list = LinkedListHelp()
+
+# Create a progress bar
+progress_bar = ttk.Progressbar(content_frame, orient="horizontal", length=300, mode="determinate")
+progress_bar.pack(pady=10)
 
 # Function to handle the submit button, add response at bottom of the window
 def on_submit():
     content = text_box.get("1.0", tk.END).strip()
     if content:
         response_content = get_response(content)
-        response_label = tk.Label(root, text=response_content, font=("Helvetica", 12))
+        response_label = tk.Label(content_frame, text=response_content, font=("Helvetica", 12))
         response_label.pack(pady=10)
-        response_list.prepend(response_content)  # Store response in linked list
     else:
         messagebox.showwarning("Input Error", "Please enter some text.")
         return
-    
-# Function to handle the load button, read content from a file(s), and stores responses in linked list
+
+# Function to update the progress bar
+def update_progress_bar(num_files, file_paths):
+    progress_bar["maximum"] = num_files
+    for cur_progress, file_path in enumerate(file_paths):
+        base_content = "What is the output of this code: \n"
+        content = base_content + read_file(file_path)
+        response_content = get_response(content)
+        response_list.prepend(response_content)  # Store response in linked list
+        progress_bar["value"] = cur_progress + 1
+        root.update_idletasks()  # Update the progress bar
+    response_label = tk.Label(content_frame, text="Files stored!", font=("Helvetica", 12))
+    response_label.pack(pady=10)
+
+# Function to handle the load button, read content from a file(s), and track number of files
 def on_load_file():
     file_paths = filedialog.askopenfilenames(title="Select a file", filetypes=(("Text files", "*.txt"), ("All files", "*.*")))
     if file_paths:
-        base_content = "What is the output of this code: \n"
-        for file_path in file_paths:
-            content = read_file(file_path)
-            response_content = get_response(base_content + content)
-            response_list.prepend(response_content)  # Store response in linked list
+        num_files = len(file_paths)
+        update_progress_bar(num_files, file_paths)
+
+# Function to handle the load folder button, read content from all files in the folder, and track number of files
+def on_load_folder():
+    folder_path = filedialog.askdirectory(title="Select a folder")
+    if folder_path:
+        file_paths = [os.path.join(folder_path, file) for file in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, file))]
+        num_files = len(file_paths)
+        update_progress_bar(num_files, file_paths)
 
 # Function to dequeue and display responses from the linked list
 def display_responses():
@@ -46,19 +88,23 @@ def display_responses():
         response_content = response_list.dequeue()
         if response_content is None:
             break
-        response_label = tk.Label(root, text=response_content, font=("Helvetica", 12))
+        response_label = tk.Label(content_frame, text=response_content, font=("Helvetica", 12))
         response_label.pack(pady=10)
 
 # Create a button to submit the input
-submit_button = tk.Button(root, text="Submit", command=on_submit)
-submit_button.pack(pady=20)
+submit_button = tk.Button(content_frame, text="Submit", command=on_submit)
+submit_button.pack(pady=10)
 
 # Create a button to load content from a file
-load_button = tk.Button(root, text="Load from File", command=on_load_file)
+load_button = tk.Button(content_frame, text="Load from File", command=on_load_file)
 load_button.pack(pady=10)
 
+# Create a button to load content from a folder
+load_folder_button = tk.Button(content_frame, text="Load from Folder", command=on_load_folder)
+load_folder_button.pack(pady=10)
+
 # Create a button to display responses from the linked list
-display_button = tk.Button(root, text="Display Responses", command=display_responses)
+display_button = tk.Button(content_frame, text="Display Responses", command=display_responses)
 display_button.pack(pady=10)
 
 # Run the application
